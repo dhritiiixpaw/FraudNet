@@ -5,20 +5,25 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
-from google import genai
+from openai import OpenAI
 
 
 # --------------------------------------------------
-# ENVIRONMENT / GEMINI
+# ENVIRONMENT / BHARATCODE
 # --------------------------------------------------
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+BHARATCODE_API_KEY = os.getenv("BHARATCODE_API_KEY")
+BHARATCODE_BASE_URL = os.getenv("BHARATCODE_BASE_URL")
+BHARATCODE_MODEL = os.getenv("BHARATCODE_MODEL", "qwen-3.8-27b")
 
 client = (
-    genai.Client(api_key=GEMINI_API_KEY)
-    if GEMINI_API_KEY
+    OpenAI(
+        api_key=BHARATCODE_API_KEY,
+        base_url=BHARATCODE_BASE_URL,
+    )
+    if BHARATCODE_API_KEY and BHARATCODE_BASE_URL
     else None
 )
 
@@ -41,13 +46,14 @@ st.set_page_config(
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 RESULTS_DIR = ROOT_DIR / "results"
-DATA_FILE = ROOT_DIR / "data" / "raw" / "PaySim.csv"
+FULL_DATA_FILE = ROOT_DIR / "data" / "raw" / "PaySim.csv"
+DEMO_DATA_FILE = ROOT_DIR / "data" / "demo_transactions.csv"
 
 REPORTS_FILE = RESULTS_DIR / "sample_sar_reports.csv"
 GRAPH_FILE = RESULTS_DIR / "graph_flagged_transactions.csv"
 SUSPICIOUS_FILE = RESULTS_DIR / "suspicious_accounts.csv"
 
-SAMPLE_SIZE = 500_000
+SAMPLE_SIZE = 100_000
 
 
 # --------------------------------------------------
@@ -181,6 +187,7 @@ st.markdown(
 # LOAD DATA
 # --------------------------------------------------
 
+
 @st.cache_data
 def load_csv(file_path):
 
@@ -192,18 +199,24 @@ def load_csv(file_path):
 
 @st.cache_data
 def load_dataset_sample(file_path, nrows):
-
     if file_path.exists():
-        return pd.read_csv(file_path, nrows=nrows)
-
+        return pd.read_csv(
+            file_path,
+            nrows=nrows,
+            usecols=["type", "amount", "isFraud"]
+        )
     return pd.DataFrame()
 
-
+if FULL_DATA_FILE.exists():
+    dataset_df = load_dataset_sample(FULL_DATA_FILE, SAMPLE_SIZE)
+else:
+    dataset_df = load_dataset_sample(DEMO_DATA_FILE, SAMPLE_SIZE)
+    reports_df = load_csv(REPORTS_FILE)
+graph_df = load_csv(GRAPH_FILE)
+suspicious_df = load_csv(SUSPICIOUS_FILE)
 reports_df = load_csv(REPORTS_FILE)
 graph_df = load_csv(GRAPH_FILE)
 suspicious_df = load_csv(SUSPICIOUS_FILE)
-
-dataset_df = load_dataset_sample(DATA_FILE, SAMPLE_SIZE)
 
 
 # --------------------------------------------------
@@ -330,7 +343,7 @@ def get_risk_reasons(transaction):
 
 
 # --------------------------------------------------
-# GEMINI AI INVESTIGATION FUNCTION
+# BHARATCODE AI INVESTIGATION FUNCTION
 # --------------------------------------------------
 
 def generate_ai_investigation(
@@ -342,7 +355,7 @@ def generate_ai_investigation(
     if client is None:
 
         raise ValueError(
-            "Gemini API key was not found. "
+            "BharatCode API key or Base URL was not found. "
             "Check your .env file."
         )
 
@@ -393,20 +406,33 @@ probability of fraud.
 The dataset is synthetic PaySim data.
 """
 
-    response = client.models.generate_content(
-        model="gemini-3.8-flash",
-        contents=prompt,
+    response = client.chat.completions.create(
+        model=BHARATCODE_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are FraudNet AI, a financial fraud "
+                    "investigation assistant. Be accurate, "
+                    "concise, and transparent about limitations."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
     )
 
-    if not response.text:
+    ai_response = response.choices[0].message.content
+
+    if not ai_response:
 
         raise ValueError(
-            "Gemini returned an empty response."
+            "BharatCode returned an empty response."
         )
 
-    return response.text
-
-
+    return ai_response
 # --------------------------------------------------
 # SIDEBAR
 # --------------------------------------------------
@@ -995,11 +1021,11 @@ elif page == "Flagged Transactions":
                 width="stretch",
             ):
 
-                if not GEMINI_API_KEY:
+                if client is None:
 
                     st.error(
-                        "Gemini API key not found. "
-                        "Please check your .env file."
+                        "BharatCode API configuration not found. "
+                         "Please check your .env file."
                     )
 
                 else:
@@ -1484,14 +1510,14 @@ elif page == "About FraudNet":
             st.subheader("04 · AI investigation copilot")
 
             st.write(
-                "Gemini generates explanatory narratives and investigation "
+                "BharatCode AI generates explanatory narratives and investigation "
                 "recommendations from selected transaction details."
             )
 
     st.subheader("Technology stack")
 
     st.code(
-        "Python · Pandas · Scikit-learn · NetworkX · Streamlit · Gemini API",
+        "Python · Pandas · Scikit-learn · NetworkX · Streamlit · BharatCode API",
         language="text",
     )
 
