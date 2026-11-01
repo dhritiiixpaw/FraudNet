@@ -1,6 +1,8 @@
 # 🛡️ FraudNet
 ### Privacy-Aware Fraud Detection & Investigation Prototype
 
+🔗 **[Live Demo](https://fraudnet-rftzu9rwm8kr9mmp8u8845.streamlit.app/)** | **[GitHub Repository](https://github.com/dhritiiixpaw/FraudNet)**
+
 FraudNet is a hackathon project exploring how simulated financial institutions could identify suspicious transactions and account connections while minimizing the sharing of raw transaction data.
 
 The prototype combines machine learning, graph-based investigation signals, and an interactive dashboard to support fraud analysis using synthetic financial transaction data. It also integrates the BharatCode API to generate AI-assisted investigation summaries and recommendations.
