@@ -1,0 +1,6 @@
+BharatCode Build League
+
+Project: FraudNet
+Description: AI-assisted financial fraud detection and investigation prototype.
+
+BharatCode API is used to power the AI Investigation Copilot.
