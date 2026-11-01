@@ -3,7 +3,7 @@
 
 FraudNet is a hackathon project exploring how simulated financial institutions could identify suspicious transactions and account connections while minimizing the sharing of raw transaction data.
 
-The prototype combines machine learning, graph-based investigation signals, and an interactive dashboard to support fraud analysis using synthetic financial transaction data.
+The prototype combines machine learning, graph-based investigation signals, and an interactive dashboard to support fraud analysis using synthetic financial transaction data. It also integrates the BharatCode API to generate AI-assisted investigation summaries and recommendations.
 
 ## ✨ Features
 
@@ -11,7 +11,7 @@ The prototype combines machine learning, graph-based investigation signals, and 
 - **Graph-Based Investigation:** Explore account connections associated with known fraud labels in the dataset.
 - **Investigation Reports:** Generate sample reports from model-flagged transactions.
 - **Interactive Dashboard:** View transaction statistics, model alerts, graph-linked transactions, and investigation reports.
-- **AI-Assisted Investigation:** Generate investigation summaries using Gemini AI.
+- **AI Investigation Copilot:** Generate transaction explanations and investigation recommendations using the BharatCode API.
 - **Privacy-Aware Concept:** Explore a simulated multi-bank scenario in which limited fraud signals could be shared instead of raw transaction data.
 
 ## 🧰 Tech Stack
@@ -21,7 +21,7 @@ The prototype combines machine learning, graph-based investigation signals, and 
 - Scikit-learn
 - NetworkX
 - Streamlit
-- Google Gemini API
+- BharatCode API (Qwen 3.8 27B)
 - PaySim synthetic financial transaction dataset
 
 ## 📊 Dataset
@@ -59,7 +59,7 @@ These results are from a prototype evaluated on synthetic data and should not be
 ### 1. Clone the repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/dhritiiixpaw/FraudNet.git
 cd FraudNet
 ```
 
@@ -69,7 +69,19 @@ cd FraudNet
 python -m pip install -r requirements.txt
 ```
 
-### 3. Train and evaluate the models
+### 3. Add the dataset
+
+Download the PaySim dataset from [Kaggle](https://www.kaggle.com/datasets/ealaxi/paysim1).
+
+Place the dataset file in:
+
+```text
+data/raw/PaySim.csv
+```
+
+The dataset is not included in this repository because of its large file size.
+
+### 4. Train and evaluate the models
 
 ```bash
 python src/train_model.py
@@ -77,7 +89,7 @@ python src/train_model.py
 
 This trains the Decision Tree and Random Forest models and displays their evaluation results.
 
-### 4. Run graph-based investigation
+### 5. Run graph-based investigation
 
 ```bash
 python src/graph_detection.py
@@ -85,13 +97,25 @@ python src/graph_detection.py
 
 This generates graph-linked investigation signals based on known fraud labels in the dataset.
 
-### 5. Generate sample investigation reports
+### 6. Generate sample investigation reports
 
 ```bash
 python src/generate_reports.py
 ```
 
-### 6. Launch the dashboard
+### 7. Configure the BharatCode API
+
+Create a `.env` file in the project root and add your BharatCode API credentials:
+
+```env
+BHARATCODE_API_KEY=your_api_key_here
+BHARATCODE_BASE_URL=https://bharatcode.ai/api/model/v1
+BHARATCODE_MODEL=qwen-3.8-27b
+```
+
+Keep your API key private. Do not commit the `.env` file to GitHub.
+
+### 8. Launch the dashboard
 
 ```bash
 python -m streamlit run src/dashboard.py
@@ -99,17 +123,7 @@ python -m streamlit run src/dashboard.py
 
 Open the local URL displayed in the terminal to access the FraudNet dashboard.
 
-### Gemini AI Configuration
-
-The AI-assisted investigation feature uses the Google Gemini API.
-
-Create a `.env` file in the project root and add:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-Keep your API key private. Do not commit the `.env` file to GitHub.
+The AI Investigation Copilot uses the BharatCode API to generate investigation summaries and recommendations based on the transaction information provided by the dashboard.
 
 ## ⚠️ Limitations
 
@@ -119,6 +133,7 @@ Keep your API key private. Do not commit the `.env` file to GitHub.
 - Model alerts are predictions and do not confirm that a transaction is fraudulent.
 - Generated investigation reports are samples and are not official regulatory filings.
 - Model evaluation is limited to the first 500,000 rows and has not been validated on real-world financial data.
+- AI-generated investigation summaries may contain inaccuracies and should be treated as decision-support outputs rather than definitive conclusions.
 
 ## 🔮 Future Improvements
 
@@ -131,7 +146,6 @@ Keep your API key private. Do not commit the `.env` file to GitHub.
 
 ## 👩‍💻 Project
 
-**FraudNet — Hackathon Prototype**
+**FraudNet — BharatCode Build League Hackathon Project**
 
-Built using Python, machine learning, graph analysis, and Streamlit.
-
+Built using Python, machine learning, graph analysis, Streamlit, and the BharatCode API.
