@@ -433,6 +433,85 @@ The dataset is synthetic PaySim data.
         )
 
     return ai_response
+
+def ask_ai_question(
+    transaction,
+    risk_score,
+    risk_level,
+    question,
+):
+
+    if client is None:
+        raise ValueError(
+            "BharatCode API configuration not found."
+        )
+
+    transaction_details = {
+        "transaction_type": str(
+            transaction.get("type", "Unknown")
+        ),
+        "amount": float(
+            transaction.get("amount", 0)
+        ),
+        "origin_account": str(
+            transaction.get("nameOrig", "Unknown")
+        ),
+        "destination_account": str(
+            transaction.get("nameDest", "Unknown")
+        ),
+        "risk_score": risk_score,
+        "risk_level": risk_level,
+        "risk_reasons": get_risk_reasons(transaction),
+    }
+
+    prompt = f"""
+You are FraudNet AI, a financial fraud investigation assistant.
+
+Answer the user's question using only the transaction
+information provided below.
+
+Transaction details:
+{transaction_details}
+
+User's question:
+{question}
+
+Be clear and concise.
+Do not invent information.
+Do not claim that the transaction is confirmed fraud.
+Explain limitations when relevant.
+The dataset is synthetic PaySim data.
+The risk score is a heuristic demo score, not a
+validated probability of fraud.
+"""
+
+    response = client.chat.completions.create(
+        model=BHARATCODE_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are FraudNet AI. Answer questions about "
+                    "financial transaction risk accurately and "
+                    "transparently."
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+    )
+
+    ai_response = response.choices[0].message.content
+
+    if not ai_response:
+        raise ValueError(
+            "BharatCode returned an empty response."
+        )
+
+    return ai_response
+
 # --------------------------------------------------
 # SIDEBAR
 # --------------------------------------------------
@@ -1049,6 +1128,78 @@ elif page == "Flagged Transactions":
                             st.error(
                                 f"AI investigation failed: {e}"
                             )
+                            
+            # ------------------------------------------
+            # ASK AI A CUSTOM QUESTION
+            # ------------------------------------------
+
+            st.markdown("#### 💬 Ask FraudNet AI")
+
+            question_key = f"ai_question_{selected_row}"
+            answer_key = f"ai_answer_{selected_row}"
+
+            user_question = st.text_area(
+                "Ask something about this transaction",
+                placeholder=(
+                    "e.g. Why is this transaction considered high risk?"
+                ),
+                key=question_key,
+            )
+
+            if st.button(
+                "💬 Ask FraudNet AI",
+                key=f"ask_ai_{selected_row}",
+                width="stretch",
+            ):
+
+                if client is None:
+
+                    st.error(
+                        "BharatCode API configuration not found."
+                    )
+
+                elif not user_question.strip():
+
+                    st.warning(
+                        "Please enter a question first."
+                    )
+
+                else:
+
+                    with st.spinner(
+                        "FraudNet AI is thinking..."
+                    ):
+
+                        try:
+
+                            ai_answer = ask_ai_question(
+                                selected_transaction,
+                                risk_score,
+                                risk_level,
+                                user_question,
+                            )
+
+                            st.session_state[answer_key] = ai_answer
+
+                        except Exception as e:
+
+                            st.error(
+                                f"AI response failed: {e}"
+                            )
+
+            if st.session_state.get(answer_key):
+
+                st.markdown("#### 🤖 AI Response")
+
+                st.markdown(
+                    st.session_state[answer_key]
+                )
+
+                st.caption(
+                    "AI-generated response for investigation assistance. "
+                    "Not a confirmed fraud finding."
+                )
+
 
             # ------------------------------------------
             # DISPLAY AI REPORT
